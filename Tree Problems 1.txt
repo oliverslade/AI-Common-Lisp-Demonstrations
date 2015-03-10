@@ -1,0 +1,182 @@
+(defun flatten (tree)
+  (cond 
+   ((null tree) nil)
+   ((atom tree)(list tree))
+   (t (loop for a in tree
+          appending (flatten a)))))
+
+
+
+;;;ITERATIVE
+
+
+
+(defun iterative-average1 (list)
+  (setq list (flatten list))
+  (if (zerop (length list))
+           nil
+  (let ((total 0) (count 0))
+  (loop do
+        (incf total (nth count list))
+        (incf count)
+      while (< count (length list)))
+    (/ total count)
+    )))
+
+(defun iterative-average2 (list)
+  (setq list (flatten list))
+  (if (zerop (length list))
+           nil
+  (let ((count 0) (sum 0))
+    (dolist (n list)
+      (incf count)
+      (incf sum n))
+    (/ sum count))))
+
+
+
+:::HEAD RECURSIVE SOLUTION
+
+
+
+(defun get-head-total (lis)
+  (cond
+   ((null lis)
+    0
+    )
+   ((atom (first lis))
+    (+ (first lis) (get-head-total (rest lis)))
+    )
+   (t
+    (+ (get-head-total (first lis))
+       (get-head-total (rest lis)))
+    )
+   ))
+
+(defun find-average-head (list)
+  (setq list (flatten list))
+  (if (zerop (length list))
+           nil
+  (/ (get-head-total list) (length list))))
+
+ 
+
+;;;TAIL RECURSIVE SOLUTION
+
+
+
+(defun get-tail-total (list &optional (total 0))
+  (cond ((null list)
+         total
+         )
+        ((listp (first list))
+         (get-tail-total (first list) (get-tail-total (rest list) total ) ) 
+         )
+        (t
+         (get-tail-total (rest list) (+ total (first list)))
+          )
+        )) 
+
+(defun find-average-tail (list)
+  (setq list (flatten list))
+  (if (zerop (length list))
+           nil
+  (/ (get-tail-total list) (length list))))
+
+
+
+;;;MATCHER SOLUTION
+
+
+(defmatch get-matcher-total (nil) 0)
+(defmatch get-matcher-total ((?n ??rest)) (+ #?n (get-matcher-total #?rest)))
+
+(defun find-average-matcher (list)
+  (setq list (flatten list))
+  (if (zerop (length list))
+           nil
+  (/ (get-matcher-total list) (length list))))
+
+
+
+;;;UNFINISHED RECURSIVE SOLUTION
+
+
+
+(defun tail-TODO (list &optional (total 0) (counter 0))
+  (cond ((null list)
+         (/ total counter)
+         )
+        ((listp (first list))
+         (tail-TODO (first list) (tail-TODO (rest list) total counter) (tail-TODO (rest list) total counter) )
+         )
+        (
+         (tail-TODO (rest list) (+ (first list) total)  (+ counter 1))
+        )
+        ))
+
+
+
+;;; TESTS
+
+
+
+(defmatch run-a-test ((?n - ?call => ?result))
+  (unless (equal #?result (eval #?call))
+    (pprint (match>> '(failed test. ?n -- ?call)))))
+
+(defun tester (tests)
+  (mapcar #'run-a-test tests)
+  'test-completed)
+
+(defparameter tests
+  
+  ;;;TESTING THE EXAMPLE SCENARIO (RECURSIVE & MATCHER)
+  
+  '((test1 - (find-average-matcher '(10 ((30 1) 20) (8 (5 (50 7)) 9) 40)) => 18)
+    (test2 - (find-average-head '(10 ((30 1) 20) (8 (5 (50 7)) 9) 40)) => 18)
+    (test3 - (find-average-tail '(10 ((30 1) 20) (8 (5 (50 7)) 9) 40)) => 18)
+    
+    ;;;TESTING NIL AND ZERO INPUT IN FUNCTION (RECURSIVE & MATCHER)
+    
+    (test4 - (find-average-matcher '()) => nil)
+    (test5 - (find-average-head '()) => nil)
+    (test6 - (find-average-tail '()) => nil)
+    (test7 - (find-average-matcher '(0)) => 0)
+    (test8 - (find-average-head '(0)) => 0)
+    (test9 - (find-average-tail '(0)) => 0)
+    
+    ;;;TESTING A FLAT LIST (RECURSIVE & MATCHER)
+    
+    (test10 - (find-average-matcher '(1 2 3 4 5 6 7 8 9)) => 5)
+    (test11 - (find-average-head '(1 2 3 4 5 6 7 8 9)) => 5)
+    (test12 - (find-average-tail '(1 2 3 4 5 6 7 8 9)) => 5)
+    
+    ;;;TESTING A MINUS IN THE LIST (RECURSIVE & MATCHER)
+    
+    (test13 - (find-average-matcher '(10 ((-30 1) 20) (8 (5 (50 7)) 9) 40)) => 12)
+    (test14 - (find-average-head '(10 ((-30 1) 20) (8 (5 (50 7)) 9) 40)) => 12)
+    (test15 - (find-average-tail '(10 ((-30 1) 20) (8 (5 (50 7)) 9) 40)) => 12)
+    
+    ;;;TESTING THE EXAMPLE SCENARIO (ITERATIVE)
+    
+    (test16 - (iterative-average1 '(10 ((30 1) 20) (8 (5 (50 7)) 9) 40)) => 18)
+    (test17 - (iterative-average2 '(10 ((30 1) 20) (8 (5 (50 7)) 9) 40)) => 18)
+    
+    ;;;TESTING NIL AND ZERO INPUT IN FUNCTION (ITERATIVE)
+    
+    (test18 - (iterative-average1 '()) => nil)
+    (test19 - (iterative-average2 '()) => nil)
+    (test20 - (iterative-average1 '(0)) => 0)
+    (test21 - (iterative-average2 '(0)) => 0) 
+    
+    ;;;TESTING A FLAT LIST (ITERATIVE)
+    
+    (test22 - (iterative-average1 '(1 2 3 4 5 6 7 8 9)) => 5)
+    (test23 - (iterative-average2 '(1 2 3 4 5 6 7 8 9)) => 5)
+    
+    ;;;TESTING A MINUS IN THE LIST (ITERATIVE)
+    
+    (test24 - (iterative-average1 '(10 ((-30 1) 20) (8 (5 (50 7)) 9) 40)) => 12)
+    (test25 - (iterative-average2 '(10 ((-30 1) 20) (8 (5 (50 7)) 9) 40)) => 12)    
+    ))
